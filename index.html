@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price Prediction</title>
+    <script type="module">
+        import { Client } from "https://esm.sh/@gradio/client";
+
+        let client;
+        let form;
+        let predictionResult;
+        let predictionContainer;
+
+        async function initClient() {
+            client = await Client.connect("Wolle-Leul/Car_Resell_Price_Prediction_pln");
+        }
+
+        async function predictPrice(event) {
+            event.preventDefault();
+            if (!client) return;
+
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            // Convert numeric fields to numbers
+            data.year = parseFloat(data.year);
+            data.mileage = parseFloat(data.mileage);
+            data.vol_engine = parseFloat(data.vol_engine);
+
+            try {
+                const result = await client.predict("/predict", data);
+                predictionResult.textContent = result.data || "No result received.";
+                predictionContainer.style.display = 'block';
+            } catch (error) {
+                predictionResult.textContent = `Error: ${error.message}`;
+                predictionContainer.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initClient();
+            form = document.getElementById('prediction-form');
+            predictionResult = document.getElementById('prediction-result');
+            predictionContainer = document.getElementById('prediction-container');
+
+            form.addEventListener('submit', predictPrice);
+        });
+
+        function regenerateForm() {
+            predictionContainer.style.display = 'none';
+            form.reset();
+        }
+
+        window.regenerateForm = regenerateForm;
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('/static/c1.png') center/cover no-repeat;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+        }
+        h2 {
+            color: #004AAD;
+        }
+        .form-container {
+            margin: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #004AAD;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .prediction-container {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(207, 68, 68, 0.3);
+            border-radius: 5px;
+            display: none;
+        }
+        .regenerate-button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #33cc33;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Car Price Prediction</h2>
+        <form id="prediction-form">
+            <input type="text" name="mark" placeholder="Mark" required>
+            <input type="text" name="model_val" placeholder="Model" required>
+            <input type="text" name="generation_name" placeholder="Generation Name" required>
+            <select name="fuel" required>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Gasoline">Gasoline</option>
+                <option value="LPG">LPG</option>
+            </select>
+            <input type="text" name="province" placeholder="Province" required>
+            <input type="number" name="year" placeholder="Year" required>
+            <input type="number" name="mileage" placeholder="Mileage" required>
+            <input type="number" name="vol_engine" placeholder="Engine Volume" required>
+            <button type="submit">Predict Price</button>
+        </form>
+        <div class="prediction-container" id="prediction-container">
+            <h3>Prediction Result</h3>
+            <p id="prediction-result">The predicted price will be displayed here.</p>
+            <button class="regenerate-button" type="button" onclick="regenerateForm()">Regenerate</button>
+        </div>
+    </div>
+</body>
+</html>
