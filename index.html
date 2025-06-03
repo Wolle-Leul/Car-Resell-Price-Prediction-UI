@@ -22,6 +22,11 @@
 
         function populateSelect(select, values) {
             select.innerHTML = "";
+            const placeholder = document.createElement("option");
+            placeholder.textContent = "-- Select --";
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            select.appendChild(placeholder);
             values.forEach(value => {
                 const option = document.createElement("option");
                 option.value = value;
@@ -49,13 +54,15 @@
             populateSelect(markSelect, marks);
 
             markSelect.addEventListener("change", () => {
-                const models = [...new Set(dataMapping.filter(d => d.mark === markSelect.value).map(d => d.model))];
+                const filteredModels = dataMapping.filter(d => d.mark === markSelect.value);
+                const models = [...new Set(filteredModels.map(d => d.model))];
                 populateSelect(modelSelect, models);
                 populateSelect(genSelect, []);
             });
 
             modelSelect.addEventListener("change", () => {
-                const gens = [...new Set(dataMapping.filter(d => d.mark === markSelect.value && d.model === modelSelect.value).map(d => d.generation))];
+                const filteredGenerations = dataMapping.filter(d => d.mark === markSelect.value && d.model === modelSelect.value);
+                const gens = [...new Set(filteredGenerations.map(d => d.generation))];
                 populateSelect(genSelect, gens);
             });
 
