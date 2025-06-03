@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Price Prediction</title>
+
+    <!-- Include the data mapping script -->
+    <script src="static/data_mapping.js"></script>
+
     <script type="module">
         import { Client } from "https://esm.sh/@gradio/client";
 
@@ -16,25 +20,14 @@
             client = await Client.connect("Wolle-Leul/Car_Resell_Price_Prediction_pln");
         }
 
-        async function predictPrice(event) {
-            event.preventDefault();
-            if (!client) return;
-
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            // Convert numeric fields to numbers
-            data.year = parseFloat(data.year);
-            data.mileage = parseFloat(data.mileage);
-            data.vol_engine = parseFloat(data.vol_engine);
-
-            try {
-                const result = await client.predict("/predict", data);
-                predictionResult.textContent = result.data || "No result received.";
-                predictionContainer.style.display = 'block';
-            } catch (error) {
-                predictionResult.textContent = `Error: ${error.message}`;
-                predictionContainer.style.display = 'block';
-            }
+        function populateSelect(select, values) {
+            select.innerHTML = "";
+            values.forEach(value => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -43,7 +36,46 @@
             predictionResult = document.getElementById('prediction-result');
             predictionContainer = document.getElementById('prediction-container');
 
-            form.addEventListener('submit', predictPrice);
+            const markSelect = document.getElementById("mark");
+            const modelSelect = document.getElementById("model_val");
+            const genSelect = document.getElementById("generation_name");
+            const fuelSelect = document.getElementById("fuel");
+            const provinceInput = document.getElementById("province");
+
+            const fuelTypes = ["Diesel", "Electric", "Hybrid", "Gasoline", "LPG"];
+            populateSelect(fuelSelect, fuelTypes);
+
+            const marks = [...new Set(dataMapping.map(d => d.mark))];
+            populateSelect(markSelect, marks);
+
+            markSelect.addEventListener("change", () => {
+                const models = [...new Set(dataMapping.filter(d => d.mark === markSelect.value).map(d => d.model))];
+                populateSelect(modelSelect, models);
+                populateSelect(genSelect, []);
+            });
+
+            modelSelect.addEventListener("change", () => {
+                const gens = [...new Set(dataMapping.filter(d => d.mark === markSelect.value && d.model === modelSelect.value).map(d => d.generation))];
+                populateSelect(genSelect, gens);
+            });
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const data = Object.fromEntries(new FormData(form).entries());
+
+                data.year = parseFloat(data.year);
+                data.mileage = parseFloat(data.mileage);
+                data.vol_engine = parseFloat(data.vol_engine);
+
+                try {
+                    const result = await client.predict("/predict", data);
+                    predictionResult.textContent = result.data || "No result received.";
+                    predictionContainer.style.display = 'block';
+                } catch (error) {
+                    predictionResult.textContent = `Error: ${error.message}`;
+                    predictionContainer.style.display = 'block';
+                }
+            });
         });
 
         function regenerateForm() {
@@ -53,6 +85,7 @@
 
         window.regenerateForm = regenerateForm;
     </script>
+
     <style>
         body {
             margin: 0;
@@ -118,17 +151,11 @@
     <div class="form-container">
         <h2>Car Price Prediction</h2>
         <form id="prediction-form">
-            <input type="text" name="mark" placeholder="Mark" required>
-            <input type="text" name="model_val" placeholder="Model" required>
-            <input type="text" name="generation_name" placeholder="Generation Name" required>
-            <select name="fuel" required>
-                <option value="Diesel">Diesel</option>
-                <option value="Electric">Electric</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Gasoline">Gasoline</option>
-                <option value="LPG">LPG</option>
-            </select>
-            <input type="text" name="province" placeholder="Province" required>
+            <select name="mark" id="mark" required></select>
+            <select name="model_val" id="model_val" required></select>
+            <select name="generation_name" id="generation_name" required></select>
+            <select name="fuel" id="fuel" required></select>
+            <input type="text" name="province" id="province" placeholder="Province" required>
             <input type="number" name="year" placeholder="Year" required>
             <input type="number" name="mileage" placeholder="Mileage" required>
             <input type="number" name="vol_engine" placeholder="Engine Volume" required>
